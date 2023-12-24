@@ -20,3 +20,4 @@ spring:
       ddl-auto: create # create/update/none
       naming: # 변수명 그대로 매핑
         physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true

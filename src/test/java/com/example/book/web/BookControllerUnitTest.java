@@ -1,10 +1,79 @@
 package com.example.book.web;
 
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
+import com.example.book.domain.Book;
+import com.example.book.service.BookService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @WebMvcTest
 public class BookControllerUnitTest {
-  
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private BookService bookService;
+
+    @Test
+    public void save() throws Exception {
+        // given
+        Book book = new Book(null, "스프링 따라하기", "cos");
+        String content = new ObjectMapper().writeValueAsString(book);
+        when(bookService.save(book)).thenReturn(new Book(1L, "스프링 따라하기", "cos"));
+
+        // when
+        ResultActions resultActions = mockMvc.perform(post("/book")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(content)
+                .accept(MediaType.APPLICATION_JSON));
+
+        // then
+        resultActions
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("스프링 따라하기"))
+                .andDo(MockMvcResultHandlers.print());
+
+    }
+
+    @Test
+    public void findall() throws Exception {
+        // given
+        List<Book> books = new ArrayList<>();
+        books.add(new Book(1L, "스프링 따라하기", "cos"));
+        books.add(new Book(2L, "리액트 따라하기", "cos"));
+        when(bookService.findAll()).thenReturn(books);
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get("/book")
+                .accept(MediaType.APPLICATION_JSON));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", Matchers.hasSize(2)))
+                .andExpect(jsonPath("$.[0].title").value("스프링 따라하기"))
+                .andDo(MockMvcResultHandlers.print());
+    }
+
 }
