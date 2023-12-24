@@ -1,8 +1,11 @@
 package com.example.book.web;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -16,6 +19,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.result.MockMvcResultHandlers;
 
@@ -23,9 +27,6 @@ import com.example.book.domain.Book;
 import com.example.book.service.BookService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import lombok.extern.slf4j.Slf4j;
-
-@Slf4j
 @WebMvcTest
 public class BookControllerUnitTest {
 
@@ -36,7 +37,7 @@ public class BookControllerUnitTest {
     private BookService bookService;
 
     @Test
-    public void save() throws Exception {
+    public void saveTest() throws Exception {
         // given
         Book book = new Book(null, "스프링 따라하기", "cos");
         String content = new ObjectMapper().writeValueAsString(book);
@@ -57,7 +58,7 @@ public class BookControllerUnitTest {
     }
 
     @Test
-    public void findall() throws Exception {
+    public void findallTest() throws Exception {
         // given
         List<Book> books = new ArrayList<>();
         books.add(new Book(1L, "스프링 따라하기", "cos"));
@@ -76,4 +77,64 @@ public class BookControllerUnitTest {
                 .andDo(MockMvcResultHandlers.print());
     }
 
+    @Test
+    public void findByIdTest() throws Exception {
+        // given
+        Book book = new Book(null, "스프링 따라하기", "cos");
+        Long id = 1L;
+        when(bookService.findById(id)).thenReturn(book);
+
+        // when
+        ResultActions resultActions = mockMvc.perform(get("/book/{id}", id)
+                .accept(MediaType.APPLICATION_JSON));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("스프링 따라하기"))
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+    @Test
+    public void updateTest() throws Exception {
+        // given
+        Long id = 1L;
+        Book book = new Book(null, "C++ 따라하기", "cos");
+        String content = new ObjectMapper().writeValueAsString(book);
+
+        when(bookService.update(id, book)).thenReturn(new Book(1L, "스프링 따라하기", "cos"));
+
+        // when
+        ResultActions resultActions = mockMvc.perform(put("/book/{id}", id)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(content)
+                .accept(MediaType.APPLICATION_JSON));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("스프링 따라하기"))
+                .andDo(MockMvcResultHandlers.print());
+    }
+
+    @Test
+    public void deleteTest() throws Exception {
+        // given
+        Long id = 1L;
+
+        when(bookService.delete(id)).thenReturn("ok");
+
+        // when
+        ResultActions resultActions = mockMvc.perform(delete("/book/{id}", id)
+                .accept(MediaType.APPLICATION_JSON));
+
+        // then
+        resultActions
+                .andExpect(status().isOk())
+                .andDo(MockMvcResultHandlers.print());
+
+        MvcResult requesrResult = resultActions.andReturn();
+        String res = requesrResult.getResponse().getContentAsString();
+        assertEquals("ok", res);
+    }
 }
